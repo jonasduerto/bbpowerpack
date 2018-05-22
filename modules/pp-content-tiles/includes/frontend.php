@@ -1,0 +1,109 @@
+<?php
+
+$layout = $settings->layout;
+
+switch ( $layout ) :
+
+	case 1:
+	case 5:
+		$settings->posts_per_page = 4;
+		break;
+
+	case 2:
+		$settings->posts_per_page = 5;
+		break;
+
+	case 3:
+	case 4:
+		$settings->posts_per_page = 3;
+		break;
+
+	default:
+		$settings->posts_per_page = 4;
+		break;
+
+endswitch;
+
+$query = FLBuilderLoop::query($settings);
+
+// Render the posts.
+if($query->have_posts()) :
+
+	do_action( 'pp_tiles_before_posts', $settings, $query );
+
+?>
+<div class="pp-post-tiles pp-tile-layout-<?php echo $settings->layout; ?>" itemscope="itemscope" itemtype="http://schema.org/Blog">
+	<?php
+
+	$count = 1;
+
+	while($query->have_posts()) :
+
+		$query->the_post();
+		
+		$image_size = 'large';
+
+		if ( $count == 1 || ( $count == 2 && $layout == 1 ) ) {
+			$image_size = isset( $settings->image_size_large_tile ) ? $settings->image_size_large_tile : $image_size;
+		}
+		if ( ( $count == 2 || $count == 4 ) && $layout == 2 ) {
+			$image_size = isset( $settings->image_size_small_tile ) ? $settings->image_size_small_tile : $image_size;
+		}
+		if ( ( $count == 3 || $count == 4 ) && ( $layout == 1 || $layout == 2 || $layout == 4 ) ) {
+			$image_size = isset( $settings->image_size_small_tile ) ? $settings->image_size_small_tile : $image_size;
+		}
+
+		if ( in_array( $settings->layout, array(1,2,3,4) ) ) :
+
+			if ( $count == 1 ) {
+				echo '<div class="pp-post-tile-left">';
+			}
+			if ( $count == 2 ) {
+				echo '<div class="pp-post-tile-right">';
+			}
+
+			include apply_filters( 'pp_tiles_layout_path', $module->dir . 'includes/post-grid.php', $settings->layout, $settings );
+
+			if ( $count == 1 ) {
+				echo '</div>';
+			}
+			if ( ( $query->post_count == $count ) || ($count == 3 && $settings->layout == 3) || ($count == 3 && $settings->layout == 4) || ($count == 4 && $settings->layout == 1) || ($count == 5 && $settings->layout == 2) ) {
+				echo '</div>';
+			}
+
+		endif;
+
+		$count++;
+
+	endwhile;
+
+	?>
+</div>
+<div class="fl-clear"></div>
+<?php endif; ?>
+
+<?php
+
+do_action( 'pp_tiles_after_posts', $settings, $query );
+
+// Render the empty message.
+if(!$query->have_posts() && (defined('DOING_AJAX') || isset($_REQUEST['fl_builder']))) :
+
+?>
+<div class="fl-post-grid-empty">
+	<?php
+	if (isset($settings->no_results_message)) :
+		echo $settings->no_results_message;
+	else :
+		_e( 'No posts found.', 'bb-powerpack' );
+	endif;
+	?>
+</div>
+
+<?php
+
+endif;
+
+wp_reset_postdata();
+
+?>
